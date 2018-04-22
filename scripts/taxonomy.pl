@@ -32,9 +32,11 @@ sub main{
   my %nodesDb;
   tie %nodesDb, "BerkeleyDB::Hash",
       -Filename => $$settings{dbpath},
-      -Flags    => DB_TRUNCATE
+      -Flags    => DB_TRUNCATE | DB_CREATE | DB_TXN_NOSYNC
       or die "Cannot open file $$settings{dbpath}: $! $BerkeleyDB::Error\n" ;
   
+  # Don't save the nodes.dmp in memory but instead iterate
+  # over each line.
   open(my $nodesFh,"$dbdir/nodes.dmp") or die "ERROR: could not read nodes.dmp: $!";
   while(my $nodesArr=taxonomyIterator($nodesFh,$settings)){
     my $taxid=shift(@$nodesArr);
@@ -46,7 +48,7 @@ sub main{
     $nodesDb{$taxid}=$line;
   }
   close $nodesFh;
-  untie %nodesDb; # kind of deletes the hash but flushes db
+  untie %nodesDb; # deletes the hash in memory but flushes db
   
   return 0; # exit status 0
 }
